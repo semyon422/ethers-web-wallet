@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Wallet</title>
+		<link rel="stylesheet" href="bulma.min.css">
+		<script src="ethers-5.6.2.umd.min.js" defer></script>
+		<script src="qrious.min.js" defer></script>
+		<script src="app.js" defer></script>
+		<script src="alpinejs.min.js" defer></script>
+
+		<style>
+			[x-cloak] {
+				display: none !important;
+			}
+			.qr-canvas {
+				width: 100%;
+				height: 100%;
+				position: relative;
+			}
+		</style>
+	</head>
+	<body x-data="{page: 'create'}" x-cloak>
+	<div class="container">
+		<nav class="navbar" role="navigation" x-data="{open: false}">
+			<div class="navbar-brand">
+				<div class="navbar-item">
+					<strong>Web wallet</strong>
+				</div>
+
+				<a role="button" class="navbar-burger" :class="open ? 'is-active' : ''" @click="open = !open">
+					<span></span>
+					<span></span>
+					<span></span>
+				</a>
+			</div>
+			
+			<div class="navbar-menu" :class="open ? 'is-active' : ''">
+				<div class="navbar-start">
+					<template x-for="_page in pages">
+						<a class="navbar-item" @click="page = _page; open = false;" x-text="_page"></a>
+					</template>
+				</div>
+			</div>
+		</nav>
+	</div>
+	<section class="section">
+		<div class="container">
+			<!-- create -->
+			<div class="columns" x-data="appCreate" x-init="init" x-show="page == 'create'" x-effect="updateTx">
+				<div class="column is-one-third">
+					<div class="field">
+						<label class="label">Network (tx.chainId)</label>
+						<div class="control is-expanded">
+							<div class="select is-fullwidth">
+								<select x-model="tx.chainId" @change="updateChain">
+									<template x-for="chain in chains">
+										<option
+											:value="chain.id"
+											:selected="chain.id == tx.chainId"
+											x-text="chain.name"
+										></option>
+									</template>
+								</select>
+							</div>
+						</div>
+
+						<div class="table-container">
+							<table class="table is-fullwidth">
+								<tbody>
+									<tr>
+										<th>RPC URL</th>
+										<td x-text="chain.url"></td>
+									</tr>
+									<tr>
+										<th>Chain ID</th>
+										<td x-text="chain.id"></td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+					<div class="field">
+						<label class="label">From address</label>
+						<div class="control">
+							<input
+								required
+								class="input"
+								type="text"
+								placeholder="0x0000000000000000000000000000000000000000"
+								x-model="fromAddress"
+								maxlength="42"
+							>
+						</div>
+						<p class="help is-success" x-show="isAddressValid(fromAddress)">This address is valid</p>
+						<p class="help is-danger" x-show="!isAddressValid(fromAddress)">This address is invalid</p>
+					</div>
+					<div class="field">
+						<label class="label">Balance</label>
+						<div class="field has-addons">
+							<div class="control is-expanded">
+								<input class="input" type="number" :value="balance" disabled>
+							</div>
+							<p class="control">
+								<a class="button is-static" x-text="chain.symbol"></a>
+							</p>
+							<p class="control">
+								<a class="button is-info" :class="isAddressValid(fromAddress) ? '' : 'is-static'" @click="getBalance">
+									Get
+								</a>
+							</p>
+						</div>
+					</div>
+				</div>
+				<div class="column is-one-third">
+					<div class="field">
+						<label class="label">To address (tx.to)</label>
+						<div class="control">
+							<input
+								required
+								class="input"
+								type="text"
+								placeholder="0x0000000000000000000000000000000000000000"
+								x-model="tx.to"
+								maxlength="42"
+							>
+						</div>
+						<p class="help is-success" x-show="isAddressValid(tx.to)">This address is valid</p>
+						<p class="help is-danger" x-show="!isAddressValid(tx.to)">This address is invalid</p>
+					</div>
+					<div class="field">
+						<label class="label">Nonce (tx.nonce)</label>
+						<div class="field has-addons">
+							<div class="control is-expanded">
+								<input class="input" type="number" x-model="tx.nonce">
+							</div>
+							<p class="control">
+								<a class="button is-info" :class="isAddressValid(fromAddress) ? '' : 'is-static'" @click="getNonce">
+									Get
+								</a>
+							</p>
+						</div>
+					</div>
+					<div class="field">
+						<label class="label">Gas limit (tx.gasLimit)</label>
+							<div class="field has-addons">
+							<div class="control is-expanded">
+								<input class="input" type="number" x-model="tx.gasLimit">
+							</div>
+							<p class="control">
+								<a class="button is-info" @click="estimateGas">
+									Get
+								</a>
+							</p>
+						</div>
+					</div>
+					<div class="field">
+						<label class="label">Gas price (tx.gasPrice)</label>
+							<div class="field has-addons">
+							<div class="control is-expanded">
+								<input class="input" type="number" x-model="tx.gasPrice">
+							</div>
+							<p class="control">
+								<a class="button is-static">Gwei</a>
+							</p>
+							<p class="control">
+								<a class="button is-info" @click="getGasPrice">
+									Get
+								</a>
+							</p>
+						</div>
+					</div>
+					<div class="field">
+						<label class="label">Data (tx.data)</label>
+						<div class="control is-expanded">
+							<input class="input" type="text" disabled x-text="tx.data">
+						</div>
+					</div>
+					<div class="field">
+						<label class="label">Amount to send (tx.value)</label>
+						<div class="control is-expanded">
+							<input class="input" type="number" x-model="tx.value">
+						</div>
+					</div>
+				</div>
+				<div class="column is-one-third">
+					<label class="label">Transaction</label>
+					<div class="field">
+						<textarea class="textarea" x-model="txJson"></textarea>
+					</div>
+					<div class="field">
+						<canvas class="qr-canvas" id="create-qr"></canvas>
+					</div>
+				</div>
+			</div>
+
+			<!-- sign -->
+			<div class="columns" x-data="appSign" x-show="page == 'sign'">
+				<div class="column is-one-third">
+					<div class="field">
+						<label class="label">Transaction JSON</label>
+						<div class="control">
+							<textarea class="textarea" x-model="txJson" @input="parse" :disabled="locked"></textarea>
+						</div>
+					</div>
+					<div class="field">
+						<label class="label">To</label>
+						<div class="control">
+							<input class="input" type="text" :value="tx.to" disabled>
+						</div>
+					</div>
+					<div class="field">
+						<label class="label">Data</label>
+						<div class="control">
+							<input class="input" type="text" :value="tx.data" disabled>
+						</div>
+					</div>
+					<div class="table-container">
+						<table class="table is-fullwidth">
+							<thead>
+								<tr>
+									<th>Value</th>
+									<th>Nonce</th>
+									<th>Gas limit</th>
+									<th>Gas price</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td x-text="tx.value"></td>
+									<td x-text="tx.nonce"></td>
+									<td x-text="tx.gasLimit"></td>
+									<td x-text="tx.gasPrice"></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<div class="table-container">
+						<table class="table is-fullwidth">
+							<tbody>
+								<tr>
+									<th>Chain name</th>
+									<td x-text="chain ? chain.name : ''"></td>
+								</tr>
+								<tr>
+									<th>Chain ID</th>
+									<td x-text="chain ? chain.id : ''"></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<div class="field">
+						<p class="control">
+							<a
+								class="button is-info"
+								:class="tx.to ? '' : 'is-static'"
+								@click="locked ? unlock() : lock()"
+								x-text="locked ? 'Unlock' : 'Lock'"
+							></a>
+						</p>
+					</div>
+				</div>
+				<div class="column is-one-third">
+					<div class="field">
+						<label class="label">Wallet</label>
+						<div class="control is-expanded">
+							<div class="select is-fullwidth">
+								<select x-model="walletMode" :disabled="!locked" @change="reset">
+									<option value="mnemonic">Mnemonic phrase</option>
+									<option value="key">Private key</option>
+									<option value="json">Encrypted JSON</option>
+								</select>
+							</div>
+						</div>
+					</div>
+					<div class="field" x-show="walletMode == 'mnemonic'">
+						<label class="label">BIP39 Mnemonic</label>
+						<div class="control">
+							<input class="input" type="password" x-model="mnemonic" :disabled="!locked">
+						</div>
+						<p class="help is-danger" x-show="decryptionError" x-text="decryptionError"></p>
+					</div>
+					<div class="field" x-show="walletMode == 'mnemonic'">
+						<label class="label">Path</label>
+						<div class="control">
+							<input class="input" type="text" x-model="path" :disabled="!locked">
+						</div>
+					</div>
+					<div class="field" x-show="walletMode == 'key'">
+						<label class="label">Private key</label>
+						<div class="control">
+							<input class="input" type="password" x-model="privateKey" :disabled="!locked" maxlength="66">
+						</div>
+						<p class="help is-danger" x-show="decryptionError" x-text="decryptionError"></p>
+					</div>
+					<div class="field" x-show="walletMode == 'json'">
+						<label class="label">Encrypted JSON</label>
+						<div class="file has-name is-fullwidth">
+							<label class="file-label">
+								<input 
+									class="file-input" 
+									type="file"
+									@change="files = $event.target.files"
+									:disabled="!locked"
+								>
+								<span class="file-cta">
+									<span class="file-label">
+										Choose a file…
+									</span>
+								</span>
+								<span class="file-name"
+									x-text="files !== null ? files[0].name : ''"
+								></span>
+							</label>
+						</div>
+					</div>
+					<div class="field" x-show="walletMode == 'json'">
+						<label class="label">Password</label>
+						<div class="control">
+							<input class="input" type="password" x-model="password" :disabled="!locked">
+						</div>
+						<p class="help is-danger" x-show="decryptionError" x-text="decryptionError"></p>
+					</div>
+					<div class="field" x-show="walletMode == 'json'">
+						<progress class="progress" :value="progress ? progress : '0'" max="1"></progress>
+					</div>
+			
+					<div class="field">
+						<p class="control">
+							<a class="button is-info" :class="decrypting ? 'is-loading' : ''" @click="getWallet" :disabled="!locked">
+								Load wallet
+							</a>
+						</p>
+					</div>
+
+					<div class="field">
+						<label class="label">Wallet address</label>
+						<div class="control">
+							<input class="input" type="text" :value="wallet ? wallet.address : ''" disabled>
+						</div>
+					</div>
+
+					<div class="field">
+						<p class="control">
+							<a class="button is-primary" :class="locked && wallet ? '' : 'is-static'" @click="signTransaction">
+								Sign
+							</a>
+						</p>
+					</div>
+				</div>
+				<div class="column is-one-third">
+					<label class="label">Signed transaction</label>
+					<div class="control">
+						<textarea class="textarea" x-model="signedTxRaw" readonly></textarea>
+					</div>
+					<div class="field">
+						<canvas class="qr-canvas" id="sign-qr"></canvas>
+					</div>
+				</div>
+			</div>
+
+			<!-- send -->
+			<div class="columns" x-data="appSend" x-show="page == 'send'">
+				<div class="column is-one-third">
+					<div class="field">
+						<label class="label">Signed transaction</label>
+						<div class="control">
+							<textarea class="textarea" x-model="signedTxRaw" @input="parse"></textarea>
+						</div>
+					</div>
+				</div>
+				<div class="column is-one-third">
+					<div class="field">
+						<label class="label">From</label>
+						<div class="control">
+							<input class="input" type="text" :value="tx.from" disabled>
+						</div>
+					</div>
+					<div class="field">
+						<label class="label">To</label>
+						<div class="control">
+							<input class="input" type="text" :value="tx.to" disabled>
+						</div>
+					</div>
+					<div class="field">
+						<label class="label">Data</label>
+						<div class="control">
+							<input class="input" type="text" :value="tx.data" disabled>
+						</div>
+					</div>
+					<div class="field">
+						<label class="label">Hash</label>
+						<div class="control">
+							<textarea class="textarea" :value="tx.hash" readonly></textarea>
+						</div>
+					</div>
+					<div class="table-container">
+						<table class="table is-fullwidth">
+							<thead>
+								<tr>
+									<th>Value</th>
+									<th>Nonce</th>
+									<th>Gas limit</th>
+									<th>Gas price</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td x-text="tx.value"></td>
+									<td x-text="tx.nonce"></td>
+									<td x-text="tx.gasLimit"></td>
+									<td x-text="tx.gasPrice"></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<div class="table-container">
+						<table class="table is-fullwidth">
+							<tbody>
+								<tr>
+									<th>Chain name</th>
+									<td x-text="chain ? chain.name : ''"></td>
+								</tr>
+								<tr>
+									<th>Chain ID</th>
+									<td x-text="chain ? chain.id : ''"></td>
+								</tr>
+								<tr>
+									<th>RPC URL</th>
+									<td x-text="chain ? chain.url : ''"></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+					<div class="field">
+						<p class="control">
+							<a class="button is-primary" :class="complete ? '' : 'is-loading'" @click="sendTransaction">
+								Send
+							</a>
+						</p>
+					</div>
+				</div>
+				<div class="column is-one-third">
+					<div class="field">
+						<label class="label">Status</label>
+						<div class="control">
+							<input class="input" type="text" :value="status" readonly>
+						</div>
+						<div class="table-container">
+							<table class="table is-fullwidth">
+								<tbody>
+									<tr>
+										<th>Block number</th>
+										<td x-text="txReceipt ? txReceipt.blockNumber : ''"></td>
+									</tr>
+									<tr>
+										<th>Confirmations</th>
+										<td x-text="txReceipt ? txReceipt.confirmations : ''"></td>
+									</tr>
+									<tr>
+										<th>Gas used</th>
+										<td x-text="txReceipt ? txReceipt.gasUsed : ''"></td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+					<article class="message" x-show="message">
+						<div class="message-body" x-text="message"></div>
+					</article>
+				</div>
+			</div>
+		</div>
+	</section>
+	<footer class="footer">
+		<div class="content has-text-centered">
+			<p>
+				<strong>ethers web wallet</strong> v.1.0.0 by <a href="https://github.com/semyon422">semyon422</a>.
+				The source code is licensed <a href="http://opensource.org/licenses/mit-license.php">MIT</a>.
+			</p>
+		</div>
+	</footer>
+	</body>
+</html>
