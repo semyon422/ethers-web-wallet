@@ -278,7 +278,10 @@ function appSend() {return {
 		}
 	},
 	scanSignedTransaction() {
-		this.scan(tx => this.signedTxRaw = tx)
+		this.scan(tx => {
+			this.signedTxRaw = tx
+			this.parse()
+		})
 	},
 	parseTransaction() {
 		let tx = ethers.utils.parseTransaction(this.signedTxRaw)
