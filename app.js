@@ -78,6 +78,16 @@ let pages = [
 let createQR
 let signQR
 
+function appMain() {return {
+	page: "create",
+	resultCallback: null,
+	openScanModal() {},
+	scan(cb) {
+		this.resultCallback = cb
+		this.openScanModal()
+	},
+}}
+
 let provider
 function appCreate() {return {
 	fromAddress: "",
@@ -93,6 +103,12 @@ function appCreate() {return {
 		data: "",
 		value: "0",
 		chainId: chains[0].id,
+	},
+	scanFromAddress() {
+		this.scan(address => this.fromAddress = address)
+	},
+	scanToAddress() {
+		this.scan(address => this.tx.to = address)
 	},
 	init() {
 		this.updateChain()
@@ -129,6 +145,7 @@ function appCreate() {return {
 		}
 	},
 	updateTx() {
+		console.log(this.txJson)
 		let tx = this.getTx()
 
 		if (!createQR) createQR = new QRious({
@@ -136,10 +153,10 @@ function appCreate() {return {
 			size: 512,
 		})
 		createQR.value = JSON.stringify(tx)
-
-		if (isAddressValid(tx.to)) createQR.foregroundAlpha = 1
-		else createQR.foregroundAlpha = 0.25
-
+		if (!createQR.value) {
+			createQR.value = this.txJson
+			return
+		}
 		this.txJson = JSONstringifyOrder(tx, "  ")
 	},
 }}
@@ -168,6 +185,18 @@ function appSign() {return {
 			this.tx = {}
 			this.chain = {}
 		}
+	},
+	scanTransactionJson() {
+		this.scan(tx => {
+			this.txJson = tx
+			this.parse()
+		})
+	},
+	scanMnemonic() {
+		this.scan(mnemonic => this.mnemonic = mnemonic)
+	},
+	scanPrivateKey() {
+		this.scan(privateKey => this.privateKey = privateKey)
 	},
 	resetWallet() {
 		this.wallet = null
@@ -248,6 +277,9 @@ function appSend() {return {
 			this.tx = {}
 		}
 	},
+	scanSignedTransaction() {
+		this.scan(tx => this.signedTxRaw = tx)
+	},
 	parseTransaction() {
 		let tx = ethers.utils.parseTransaction(this.signedTxRaw)
 		this.tx = formatTransaction(tx)
@@ -268,5 +300,47 @@ function appSend() {return {
 			this.message = e.reason
 		}
 		this.complete = true
+	},
+}}
+
+let qrScanner
+function appQrScan() {return {
+	hasCamera: false,
+	hasFlash: false,
+	isScanning: false,
+	cameraId: "environment",
+	cameras: [],
+	async init() {
+		this.hasCamera = await QrScanner.hasCamera()
+		this.cameras = await QrScanner.listCameras(true)
+		let video = document.getElementById("qr-scanner")
+		qrScanner = new QrScanner(video, result => this.onDecode(result), {
+			returnDetailedScanResult: true,
+			highlightScanRegion: true,
+			highlightCodeOutline: true,
+		})
+		qrScanner.setInversionMode("both")
+
+		this.openScanModal = () => this.start()
+	},
+	async onDecode(result) {
+		if (result.data == "") return
+		this.resultCallback(result.data)
+		await this.stop()
+	},
+	async start() {
+		this.isScanning = true
+		await qrScanner.start()
+		this.hasFlash = await qrScanner.hasFlash()
+	},
+	async stop() {
+		this.isScanning = false
+		await qrScanner.stop()
+	},
+	async updateCamera() {
+		await qrScanner.setCamera(this.cameraId)
+	},
+	toggleFlash() {
+		qrScanner.toggleFlash()
 	},
 }}

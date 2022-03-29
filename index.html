@@ -7,6 +7,7 @@
 		<link rel="stylesheet" href="bulma.min.css">
 		<script src="ethers-5.6.2.umd.min.js" defer></script>
 		<script src="qrious.min.js" defer></script>
+		<script src="qr-scanner.umd.min.js" defer></script>
 		<script src="app.js" defer></script>
 		<script src="alpinejs.min.js" defer></script>
 
@@ -21,7 +22,7 @@
 			}
 		</style>
 	</head>
-	<body x-data="{page: 'create'}" x-cloak>
+	<body x-data="appMain" x-cloak>
 	<div class="container">
 		<nav class="navbar" role="navigation" x-data="{open: false}">
 			<div class="navbar-brand">
@@ -48,7 +49,7 @@
 	<section class="section">
 		<div class="container">
 			<!-- create -->
-			<div class="columns" x-data="appCreate" x-init="init" x-show="page == 'create'" x-effect="updateTx">
+			<div class="columns" x-data="appCreate" x-show="page == 'create'" x-effect="updateTx">
 				<div class="column is-one-third">
 					<div class="field">
 						<label class="label">Network (tx.chainId)</label>
@@ -83,15 +84,22 @@
 					</div>
 					<div class="field">
 						<label class="label">From address</label>
-						<div class="control">
-							<input
-								required
-								class="input"
-								type="text"
-								placeholder="0x0000000000000000000000000000000000000000"
-								x-model="fromAddress"
-								maxlength="42"
-							>
+						<div class="field has-addons">
+							<div class="control is-expanded">
+								<input
+									required
+									class="input"
+									type="text"
+									placeholder="0x0000000000000000000000000000000000000000"
+									x-model="fromAddress"
+									maxlength="42"
+								>
+							</div>
+							<p class="control">
+								<a class="button" @click="scanFromAddress">
+									Scan
+								</a>
+							</p>
 						</div>
 						<p class="help is-success" x-show="isAddressValid(fromAddress)">This address is valid</p>
 						<p class="help is-danger" x-show="!isAddressValid(fromAddress)">This address is invalid</p>
@@ -116,15 +124,22 @@
 				<div class="column is-one-third">
 					<div class="field">
 						<label class="label">To address (tx.to)</label>
-						<div class="control">
-							<input
-								required
-								class="input"
-								type="text"
-								placeholder="0x0000000000000000000000000000000000000000"
-								x-model="tx.to"
-								maxlength="42"
-							>
+						<div class="field has-addons">
+							<div class="control is-expanded">
+								<input
+									required
+									class="input"
+									type="text"
+									placeholder="0x0000000000000000000000000000000000000000"
+									x-model="tx.to"
+									maxlength="42"
+								>
+							</div>
+							<p class="control">
+								<a class="button" @click="scanToAddress">
+									Scan
+								</a>
+							</p>
 						</div>
 						<p class="help is-success" x-show="isAddressValid(tx.to)">This address is valid</p>
 						<p class="help is-danger" x-show="!isAddressValid(tx.to)">This address is invalid</p>
@@ -187,7 +202,7 @@
 				<div class="column is-one-third">
 					<label class="label">Transaction</label>
 					<div class="field">
-						<textarea class="textarea" x-model="txJson"></textarea>
+						<textarea class="textarea" x-model="txJson" readonly></textarea>
 					</div>
 					<div class="field">
 						<canvas class="qr-canvas" id="create-qr"></canvas>
@@ -203,6 +218,13 @@
 						<div class="control">
 							<textarea class="textarea" x-model="txJson" @input="parse" :disabled="locked"></textarea>
 						</div>
+					</div>
+					<div class="field">
+						<p class="control">
+							<a class="button" @click="scanTransactionJson">
+								Scan
+							</a>
+						</p>
 					</div>
 					<div class="field">
 						<label class="label">To</label>
@@ -276,8 +298,15 @@
 					</div>
 					<div class="field" x-show="walletMode == 'mnemonic'">
 						<label class="label">BIP39 Mnemonic</label>
-						<div class="control">
-							<input class="input" type="password" x-model="mnemonic" :disabled="!locked">
+						<div class="field has-addons">
+							<div class="control is-expanded">
+								<input class="input" type="password" x-model="mnemonic" :disabled="!locked">
+							</div>
+							<p class="control">
+								<a class="button" @click="scanMnemonic">
+									Scan
+								</a>
+							</p>
 						</div>
 						<p class="help is-danger" x-show="decryptionError" x-text="decryptionError"></p>
 					</div>
@@ -289,8 +318,15 @@
 					</div>
 					<div class="field" x-show="walletMode == 'key'">
 						<label class="label">Private key</label>
-						<div class="control">
-							<input class="input" type="password" x-model="privateKey" :disabled="!locked" maxlength="66">
+						<div class="field has-addons">
+							<div class="control is-expanded">
+								<input class="input" type="password" x-model="privateKey" :disabled="!locked" maxlength="66">
+							</div>
+							<p class="control">
+								<a class="button" @click="scanPrivateKey">
+									Scan
+								</a>
+							</p>
 						</div>
 						<p class="help is-danger" x-show="decryptionError" x-text="decryptionError"></p>
 					</div>
@@ -369,6 +405,13 @@
 							<textarea class="textarea" x-model="signedTxRaw" @input="parse"></textarea>
 						</div>
 					</div>
+					<div class="field">
+						<p class="control">
+							<a class="button" @click="scanSignedTransaction">
+								Scan
+							</a>
+						</p>
+					</div>
 				</div>
 				<div class="column is-one-third">
 					<div class="field">
@@ -435,7 +478,11 @@
 					</div>
 					<div class="field">
 						<p class="control">
-							<a class="button is-primary" :class="complete ? '' : 'is-loading'" @click="sendTransaction">
+							<a
+								class="button is-primary"
+								:class="(complete ? '' : 'is-loading ') + (tx.to ? '' : 'is-static')"
+								@click="sendTransaction"
+							>
 								Send
 							</a>
 						</p>
@@ -472,11 +519,41 @@
 				</div>
 			</div>
 		</div>
+		<div class="modal" :class="isScanning ? 'is-active' : ''" x-data="appQrScan">
+			<div class="modal-background" @click="stop"></div>
+			<div class="modal-content box">
+				<p x-show="!hasCamera"> Camera not found</p>
+
+				<div class="field" x-show="hasCamera">
+					<label class="label">Camera</label>
+					<div class="control is-expanded">
+						<div class="select is-fullwidth">
+							<select x-model="cameraId" @change="updateCamera">
+								<option value="environment" selected>Environment Facing (default)</option>
+								<option value="user">User Facing</option>
+								<template x-for="camera in cameras">
+									<option
+										:value="camera.id"
+										x-text="camera.label"
+									></option>
+								</template>
+							</select>
+						</div>
+					</div>
+				</div>
+				
+				<div id="video-container">
+					<video id="qr-scanner"></video>
+				</div>
+				<a class="button" x-show="hasFlash" @click="toggleFlash">Toggle flash</a>
+			</div>
+			<button class="modal-close is-large" @click="stop"></button>
+		</div>
 	</section>
 	<footer class="footer">
 		<div class="content has-text-centered">
 			<p>
-				<strong>ethers web wallet</strong> v.1.0.0 by <a href="https://github.com/semyon422">semyon422</a>.
+				<strong>ethers web wallet</strong> v.1.0.1 by <a href="https://github.com/semyon422">semyon422</a>.
 				The source code is licensed <a href="http://opensource.org/licenses/mit-license.php">MIT</a>.
 			</p>
 		</div>

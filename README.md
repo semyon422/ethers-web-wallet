@@ -25,10 +25,16 @@ First, a transaction is created on a device connected to the Internet. Then it s
 - Token support.
 - Identicons.
 
+**Changelog:**
+
+- v1.0.0 - Create
+- v1.0.1 - Add QR scanner
+
 **Used Libraries:**
 
 - [ethers](https://github.com/ethers-io/ethers.js)
 - [qrious](https://github.com/neocotic/qrious)
+- [qr-scanner](https://github.com/nimiq/qr-scanner)
 - [alpine](https://github.com/alpinejs/alpine)
 - [bulma](https://github.com/jgthms/bulma)
 
