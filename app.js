@@ -311,6 +311,14 @@ function appQrScan() {return {
 	cameraId: "environment",
 	cameras: [],
 	async init() {
+		this.openScanModal = () => this.start()
+	},
+	async onDecode(result) {
+		if (result.data == "") return
+		this.resultCallback(result.data)
+		await this.stop()
+	},
+	async start() {
 		this.hasCamera = await QrScanner.hasCamera()
 		this.cameras = await QrScanner.listCameras(true)
 		let video = document.getElementById("qr-scanner")
@@ -321,14 +329,6 @@ function appQrScan() {return {
 		})
 		qrScanner.setInversionMode("both")
 
-		this.openScanModal = () => this.start()
-	},
-	async onDecode(result) {
-		if (result.data == "") return
-		this.resultCallback(result.data)
-		await this.stop()
-	},
-	async start() {
 		this.isScanning = true
 		await qrScanner.start()
 		this.hasFlash = await qrScanner.hasFlash()
@@ -336,6 +336,8 @@ function appQrScan() {return {
 	async stop() {
 		this.isScanning = false
 		await qrScanner.stop()
+		qrScanner.destroy()
+		qrScanner = null
 	},
 	async updateCamera() {
 		await qrScanner.setCamera(this.cameraId)
