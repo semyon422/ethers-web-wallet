@@ -21,7 +21,6 @@ First, a transaction is created on a device connected to the Internet. Then it s
 **Todo:**
 
 - More default networks.
-- Creating a new wallet.
 - Identicons.
 
 **Changelog:**
@@ -29,6 +28,7 @@ First, a transaction is created on a device connected to the Internet. Then it s
 - v1.0.0 - Create
 - v1.0.1 - Add QR scanner
 - v1.0.2 - Add ERC20 tokens support
+- v1.0.3 - Add wallet creation page
 
 **Used Libraries:**
 
