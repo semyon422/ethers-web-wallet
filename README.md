@@ -29,6 +29,7 @@ First, a transaction is created on a device connected to the Internet. Then it s
 
 - v1.0.0 - Create
 - v1.0.1 - Add QR scanner
+- v1.0.2 - Add ERC20 tokens support
 
 **Used Libraries:**
 
