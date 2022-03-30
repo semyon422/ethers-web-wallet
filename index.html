@@ -36,7 +36,7 @@
 					<span></span>
 				</a>
 			</div>
-			
+
 			<div class="navbar-menu" :class="open ? 'is-active' : ''">
 				<div class="navbar-start">
 					<template x-for="_page in pages">
@@ -48,8 +48,77 @@
 	</div>
 	<section class="section">
 		<div class="container">
-			<!-- create -->
-			<div class="columns" x-data="appCreate" x-show="page == 'create'">
+			<!-- create wallet -->
+			<div class="columns" x-data="appCreateWallet" x-show="page == 'create wallet'">
+				<div class="column is-one-third">
+					<div class="field">
+						<label class="label">Mnemonic phrase</label>
+						<div class="control is-expanded">
+							<textarea class="textarea" :value="wallet && wallet.mnemonic.phrase" readonly></textarea>
+						</div>
+					</div>
+					<div class="field">
+						<label class="label">Private key</label>
+						<div class="control is-expanded">
+							<textarea class="textarea" :value="wallet && wallet.privateKey" readonly></textarea>
+						</div>
+					</div>
+					<div class="field">
+						<p class="control">
+							<a class="button is-primary" @click="createRandom">
+								Create
+							</a>
+						</p>
+					</div>
+					<article class="message" x-show="creationError">
+						<div class="message-body" x-text="creationError"></div>
+					</article>
+				</div>
+				<div class="column is-one-third">
+					<div class="field">
+						<label class="label">Address</label>
+						<div class="control is-expanded">
+							<input class="input" type="text" :value="wallet && wallet.address" readonly>
+						</div>
+					</div>
+					<div class="field">
+						<canvas class="qr-canvas" id="create-wallet-qr"></canvas>
+					</div>
+				</div>
+				<div class="column is-one-third">
+					<div class="field">
+						<label class="label">Encrypted JSON</label>
+						<div class="control is-expanded">
+							<textarea class="textarea" :value="encryptedJson" readonly></textarea>
+						</div>
+					</div>
+					<div class="field">
+						<div class="control is-expanded">
+							<progress class="progress" :value="progress ? progress : '0'" max="1"></progress>
+						</div>
+					</div>
+					<div class="field">
+						<label class="label">Password</label>
+						<div class="control is-expanded">
+							<input class="input" type="password" x-model="password">
+						</div>
+					</div>
+					<div class="field is-grouped">
+						<p class="control">
+							<a class="button is-info" :class="encrypting ? 'is-loading' : ''" @click="encrypt" :disabled="!(password && wallet)">
+								Encrypt
+							</a>
+						</p>
+						<p class="control">
+							<a id="download-keystore" class="button" :disabled="!encryptedJson">
+								Download
+							</a>
+						</p>
+					</div>
+				</div>
+			</div>
+			<!-- create tx -->
+			<div class="columns" x-data="appCreate" x-show="page == 'create tx'">
 				<div class="column is-one-third">
 					<div class="field">
 						<label class="label">Network (tx.chainId)</label>
@@ -289,8 +358,8 @@
 					</div>
 				</div>
 				<div class="column is-one-third">
-					<label class="label">Transaction</label>
 					<div class="field">
+						<label class="label">Transaction</label>
 						<textarea class="textarea" x-model="txJson" readonly></textarea>
 					</div>
 					<div class="field">
@@ -299,8 +368,8 @@
 				</div>
 			</div>
 
-			<!-- sign -->
-			<div class="columns" x-data="appSign" x-show="page == 'sign'">
+			<!-- sign tx -->
+			<div class="columns" x-data="appSign" x-show="page == 'sign tx'">
 				<div class="column is-one-third">
 					<div class="field">
 						<label class="label">Transaction JSON</label>
@@ -451,8 +520,8 @@
 						<label class="label">Encrypted JSON</label>
 						<div class="file has-name is-fullwidth">
 							<label class="file-label">
-								<input 
-									class="file-input" 
+								<input
+									class="file-input"
 									type="file"
 									@change="files = $event.target.files"
 									:disabled="!locked"
@@ -478,7 +547,7 @@
 					<div class="field" x-show="walletMode == 'json'">
 						<progress class="progress" :value="progress ? progress : '0'" max="1"></progress>
 					</div>
-			
+
 					<div class="field">
 						<p class="control">
 							<a class="button is-info" :class="decrypting ? 'is-loading' : ''" @click="getWallet" :disabled="!locked">
@@ -513,8 +582,8 @@
 				</div>
 			</div>
 
-			<!-- send -->
-			<div class="columns" x-data="appSend" x-show="page == 'send'">
+			<!-- send tx -->
+			<div class="columns" x-data="appSend" x-show="page == 'send tx'">
 				<div class="column is-one-third">
 					<div class="field">
 						<label class="label">Signed transaction</label>
@@ -689,7 +758,7 @@
 						</div>
 					</div>
 				</div>
-				
+
 				<div id="video-container">
 					<video id="qr-scanner"></video>
 				</div>
@@ -701,7 +770,7 @@
 	<footer class="footer">
 		<div class="content has-text-centered">
 			<p>
-				<strong>ethers web wallet</strong> v1.0.2 by <a href="https://github.com/semyon422">semyon422</a>.
+				<strong>ethers web wallet</strong> v1.0.3 by <a href="https://github.com/semyon422">semyon422</a>.
 				The source code is licensed <a href="http://opensource.org/licenses/mit-license.php">MIT</a>.
 			</p>
 		</div>

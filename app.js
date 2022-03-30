@@ -116,14 +116,15 @@ let erc20abi = [
 let erc20interface = new ethers.utils.Interface(erc20abi)
 
 let pages = [
-	"create", "sign", "send"
+	"create wallet", "create tx", "sign tx", "send tx"
 ]
 
 let createQR
 let signQR
+let createWalletQR
 
 function appMain() {return {
-	page: "create",
+	page: "create tx",
 	resultCallback: null,
 	openScanModal() {},
 	scan(cb) {
@@ -132,6 +133,46 @@ function appMain() {return {
 	},
 }}
 
+function appCreateWallet() {return {
+	wallet: null,
+	creationError: "",
+	password: "",
+	progress: 0,
+	encrypting: false,
+	encryptedJson: "",
+	createRandom() {
+		try {
+			this.wallet = ethers.Wallet.createRandom()
+			if (!createWalletQR) createWalletQR = new QRious({
+				element: document.getElementById("create-wallet-qr"),
+				size: 512,
+			})
+			createWalletQR.value = JSON.stringify(this.wallet.address)
+		} catch (e) {
+			this.creationError = e.reason || e.message
+		}
+
+		this.encryptedJson = ""
+	},
+	async encrypt() {
+		this.encryptedJson = ""
+		this.encrypting = true
+		try {
+			let obj = this
+			this.encryptedJson = await this.wallet.encrypt(this.password, {}, function(p) {
+				obj.progress = p
+			})
+			let encrypted = JSON.parse(this.encryptedJson)
+
+			var blob = new Blob([this.encryptedJson], {type: 'text/json'})
+			let a = document.getElementById("download-keystore")
+
+			a.download = encrypted["x-ethers"].gethFilename
+			a.href = window.URL.createObjectURL(blob)
+		} catch {}
+		this.encrypting = false
+	},
+}}
 
 let provider
 let contract
@@ -214,7 +255,6 @@ function appCreate() {return {
 		if (!amount) amount = "0"
 		if (!this.token) gasLimit = await provider.estimateGas(parseTransaction(await this.getTx()))
 		else gasLimit = await contract.estimateGas.transfer(this.fromAddress, ethers.utils.parseUnits(amount, this.token.decimals))
-		// gasLimit = await provider.estimateGas(parseTransaction(await this.getTx()))
 		this.tx.gasLimit = ethers.BigNumber.from(gasLimit).toString()
 		await this.updateTx()
 	},
