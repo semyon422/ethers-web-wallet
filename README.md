@@ -22,7 +22,6 @@ First, a transaction is created on a device connected to the Internet. Then it s
 
 - More default networks.
 - Creating a new wallet.
-- Token support.
 - Identicons.
 
 **Changelog:**
