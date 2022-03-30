@@ -49,7 +49,7 @@
 	<section class="section">
 		<div class="container">
 			<!-- create -->
-			<div class="columns" x-data="appCreate" x-show="page == 'create'" x-effect="updateTx">
+			<div class="columns" x-data="appCreate" x-show="page == 'create'">
 				<div class="column is-one-third">
 					<div class="field">
 						<label class="label">Network (tx.chainId)</label>
@@ -93,6 +93,7 @@
 									placeholder="0x0000000000000000000000000000000000000000"
 									x-model="fromAddress"
 									maxlength="42"
+									@input="updateTx"
 								>
 							</div>
 							<p class="control">
@@ -120,9 +121,52 @@
 							</p>
 						</div>
 					</div>
+					<div class="field">
+						<label class="label">ERC20 Token</label>
+						<div class="control is-expanded">
+							<div class="select is-fullwidth">
+								<select x-model="tokenAddress" @change="updateToken" :disabled="!isAddressValid(fromAddress)">
+									<option value="" selected>No token</option>
+									<template x-for="token in tokens.filter(t => t.chainId == tx.chainId)">
+										<option
+											:value="token.address"
+											x-text="token.name"
+										></option>
+									</template>
+								</select>
+							</div>
+						</div>
+					</div>
+					<div class="field" x-show="token">
+						<label class="label">Token address (tx.to)</label>
+						<div class="control is-expanded">
+							<input
+								class="input"
+								type="text"
+								:value="tx.to"
+								disabled
+							>
+						</div>
+					</div>
+					<div class="field" x-show="token">
+						<label class="label">Token balance</label>
+						<div class="field has-addons">
+							<div class="control is-expanded">
+								<input class="input" type="number" :value="token && token.balance" disabled>
+							</div>
+							<p class="control">
+								<a class="button is-static" x-text="token && token.symbol"></a>
+							</p>
+							<p class="control">
+								<a class="button is-info" :class="isAddressValid(fromAddress) ? '' : 'is-static'" @click="getTokenBalance">
+									Get
+								</a>
+							</p>
+						</div>
+					</div>
 				</div>
 				<div class="column is-one-third">
-					<div class="field">
+					<div class="field" x-show="!token">
 						<label class="label">To address (tx.to)</label>
 						<div class="field has-addons">
 							<div class="control is-expanded">
@@ -133,6 +177,7 @@
 									placeholder="0x0000000000000000000000000000000000000000"
 									x-model="tx.to"
 									maxlength="42"
+									@input="updateTx"
 								>
 							</div>
 							<p class="control">
@@ -144,11 +189,34 @@
 						<p class="help is-success" x-show="isAddressValid(tx.to)">This address is valid</p>
 						<p class="help is-danger" x-show="!isAddressValid(tx.to)">This address is invalid</p>
 					</div>
+					<div class="field" x-show="token">
+						<label class="label">To address (transfer to)</label>
+						<div class="field has-addons">
+							<div class="control is-expanded">
+								<input
+									required
+									class="input"
+									type="text"
+									placeholder="0x0000000000000000000000000000000000000000"
+									x-model="transferTo"
+									maxlength="42"
+									@input="updateTx"
+								>
+							</div>
+							<p class="control">
+								<a class="button" @click="scanTransferToAddress">
+									Scan
+								</a>
+							</p>
+						</div>
+						<p class="help is-success" x-show="isAddressValid(transferTo)">This address is valid</p>
+						<p class="help is-danger" x-show="!isAddressValid(transferTo)">This address is invalid</p>
+					</div>
 					<div class="field">
 						<label class="label">Nonce (tx.nonce)</label>
 						<div class="field has-addons">
 							<div class="control is-expanded">
-								<input class="input" type="number" x-model="tx.nonce">
+								<input class="input" type="number" x-model="tx.nonce" @input="updateTx">
 							</div>
 							<p class="control">
 								<a class="button is-info" :class="isAddressValid(fromAddress) ? '' : 'is-static'" @click="getNonce">
@@ -161,10 +229,10 @@
 						<label class="label">Gas limit (tx.gasLimit)</label>
 							<div class="field has-addons">
 							<div class="control is-expanded">
-								<input class="input" type="number" x-model="tx.gasLimit">
+								<input class="input" type="number" x-model="tx.gasLimit" @input="updateTx">
 							</div>
 							<p class="control">
-								<a class="button is-info" @click="estimateGas">
+								<a class="button is-info" :class="isAddressValid(tx.to) ? '' : 'is-static'" @click="estimateGas">
 									Get
 								</a>
 							</p>
@@ -174,7 +242,7 @@
 						<label class="label">Gas price (tx.gasPrice)</label>
 							<div class="field has-addons">
 							<div class="control is-expanded">
-								<input class="input" type="number" x-model="tx.gasPrice">
+								<input class="input" type="number" x-model="tx.gasPrice" @input="updateTx">
 							</div>
 							<p class="control">
 								<a class="button is-static">Gwei</a>
@@ -187,15 +255,36 @@
 						</div>
 					</div>
 					<div class="field">
-						<label class="label">Data (tx.data)</label>
-						<div class="control is-expanded">
-							<input class="input" type="text" disabled x-text="tx.data">
+						<label class="label">Fee limit (gasPrice * gasLimit)</label>
+							<div class="field has-addons">
+							<div class="control is-expanded">
+								<input class="input" type="number" :value="gasFeeLimit">
+							</div>
+							<p class="control">
+								<a class="button is-static" x-text="chain.symbol"></a>
+							</p>
 						</div>
 					</div>
-					<div class="field">
+					<div class="field" x-show="!token">
 						<label class="label">Amount to send (tx.value)</label>
-						<div class="control is-expanded">
-							<input class="input" type="number" x-model="tx.value">
+						<div class="field has-addons">
+							<div class="control is-expanded">
+								<input class="input" type="number" x-model="tx.value" @input="updateTx">
+							</div>
+							<p class="control">
+								<a class="button is-static" x-text="chain.symbol"></a>
+							</p>
+						</div>
+					</div>
+					<div class="field" x-show="token">
+						<label class="label">Amount to send (transfer amount)</label>
+						<div class="field has-addons">
+							<div class="control is-expanded">
+								<input class="input" type="number" x-model="transferAmount" @input="updateTx">
+							</div>
+							<p class="control">
+								<a class="button is-static" x-text="token && token.symbol"></a>
+							</p>
 						</div>
 					</div>
 				</div>
@@ -226,34 +315,62 @@
 							</a>
 						</p>
 					</div>
-					<div class="field">
-						<label class="label">To</label>
+					<div class="field" x-show="!token">
+						<label class="label">To address (tx.to)</label>
 						<div class="control">
 							<input class="input" type="text" :value="tx.to" disabled>
 						</div>
 					</div>
-					<div class="field">
-						<label class="label">Data</label>
+					<div class="field" x-show="token">
+						<label class="label">To address (transfer to)</label>
 						<div class="control">
-							<input class="input" type="text" :value="tx.data" disabled>
+							<input class="input" type="text" :value="transferTo" disabled>
+						</div>
+					</div>
+					<div class="field" x-show="token">
+						<label class="label">Token name</label>
+						<div class="control">
+							<input class="input" type="text" :value="token && token.name" disabled>
+						</div>
+					</div>
+					<div class="field" x-show="token">
+						<label class="label">Amount to send (transfer amount)</label>
+						<div class="field has-addons">
+							<div class="control is-expanded">
+								<input class="input" type="number" :value="transferAmount" disabled>
+							</div>
+							<p class="control">
+								<a class="button is-static" x-text="token && token.symbol"></a>
+							</p>
+						</div>
+					</div>
+					<div class="field">
+						<label class="label">Amount to send (tx.value)</label>
+						<div class="field has-addons">
+							<div class="control is-expanded">
+								<input class="input" type="number" :value="tx.value" disabled>
+							</div>
+							<p class="control" x-show="tx.value">
+								<a class="button is-static" x-text="chain && chain.symbol"></a>
+							</p>
 						</div>
 					</div>
 					<div class="table-container">
 						<table class="table is-fullwidth">
 							<thead>
 								<tr>
-									<th>Value</th>
 									<th>Nonce</th>
 									<th>Gas limit</th>
-									<th>Gas price</th>
+									<th>Gas price Gwei</th>
+									<th>Gas fee limit <span x-text="chain && chain.symbol"></span></th>
 								</tr>
 							</thead>
 							<tbody>
 								<tr>
-									<td x-text="tx.value"></td>
 									<td x-text="tx.nonce"></td>
 									<td x-text="tx.gasLimit"></td>
 									<td x-text="tx.gasPrice"></td>
+									<td x-text="gasFeeLimit"></td>
 								</tr>
 							</tbody>
 						</table>
@@ -412,48 +529,79 @@
 							</a>
 						</p>
 					</div>
-				</div>
-				<div class="column is-one-third">
-					<div class="field">
-						<label class="label">From</label>
-						<div class="control">
-							<input class="input" type="text" :value="tx.from" disabled>
-						</div>
-					</div>
-					<div class="field">
-						<label class="label">To</label>
-						<div class="control">
-							<input class="input" type="text" :value="tx.to" disabled>
-						</div>
-					</div>
-					<div class="field">
-						<label class="label">Data</label>
-						<div class="control">
-							<input class="input" type="text" :value="tx.data" disabled>
-						</div>
-					</div>
 					<div class="field">
 						<label class="label">Hash</label>
 						<div class="control">
 							<textarea class="textarea" :value="tx.hash" readonly></textarea>
 						</div>
 					</div>
+					<article class="message" x-show="messageParse">
+						<div class="message-body" x-text="messageParse"></div>
+					</article>
+				</div>
+				<div class="column is-one-third">
+					<div class="field">
+						<label class="label">From address</label>
+						<div class="control">
+							<input class="input" type="text" :value="tx.from" disabled>
+						</div>
+					</div>
+					<div class="field" x-show="!token">
+						<label class="label">To address (tx.to)</label>
+						<div class="control">
+							<input class="input" type="text" :value="tx.to" disabled>
+						</div>
+					</div>
+					<div class="field" x-show="token">
+						<label class="label">To address (transfer to)</label>
+						<div class="control">
+							<input class="input" type="text" :value="transferTo" disabled>
+						</div>
+					</div>
+					<div class="field" x-show="token">
+						<label class="label">Token name</label>
+						<div class="control">
+							<input class="input" type="text" :value="token && token.name" disabled>
+						</div>
+					</div>
+					<div class="field" x-show="token">
+						<label class="label">Amount to send (transfer amount)</label>
+						<div class="field has-addons">
+							<div class="control is-expanded">
+								<input class="input" type="number" :value="transferAmount" disabled>
+							</div>
+							<p class="control">
+								<a class="button is-static" x-text="token && token.symbol"></a>
+							</p>
+						</div>
+					</div>
+					<div class="field">
+						<label class="label">Amount to send (tx.value)</label>
+						<div class="field has-addons">
+							<div class="control is-expanded">
+								<input class="input" type="number" :value="tx.value" disabled>
+							</div>
+							<p class="control" x-show="tx.value">
+								<a class="button is-static" x-text="chain && chain.symbol"></a>
+							</p>
+						</div>
+					</div>
 					<div class="table-container">
 						<table class="table is-fullwidth">
 							<thead>
 								<tr>
-									<th>Value</th>
 									<th>Nonce</th>
 									<th>Gas limit</th>
-									<th>Gas price</th>
+									<th>Gas price Gwei</th>
+									<th>Gas fee limit <span x-text="chain && chain.symbol"></span></th>
 								</tr>
 							</thead>
 							<tbody>
 								<tr>
-									<td x-text="tx.value"></td>
 									<td x-text="tx.nonce"></td>
 									<td x-text="tx.gasLimit"></td>
 									<td x-text="tx.gasPrice"></td>
+									<td x-text="gasFeeLimit"></td>
 								</tr>
 							</tbody>
 						</table>
