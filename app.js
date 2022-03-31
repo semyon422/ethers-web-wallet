@@ -67,7 +67,7 @@ let chains = [
 		id: 1,
 		symbol: "ETH",
 		name: "Ethereum Mainnet",
-		url: "https://mainnet.infura.io/v3/",
+		url: "https://cloudflare-eth.com/",
 		scan: "https://etherscan.io",
 	},
 	{
@@ -76,13 +76,6 @@ let chains = [
 		name: "Smart Chain",
 		url: "https://bsc-dataseed.binance.org/",
 		scan: "https://bscscan.com",
-	},
-	{
-		id: 3,
-		symbol: "ETH",
-		name: "Ropsten Testnet",
-		url: "https://ropsten.infura.io/v3/",
-		scan: "https://ropsten.etherscan.io",
 	},
 	{
 		id: 97,

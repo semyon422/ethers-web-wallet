@@ -17,7 +17,7 @@ First, a transaction is created on a device connected to the Internet. Then it s
 
 **Networks included:**
 
-- Ethereum Mainnet (+ Ropsten Testnet)
+- Ethereum Mainnet
 - Binance Smart Chain (+ Testnet)
 - Localhost 8545
 
