@@ -64,11 +64,25 @@ function unsetIdenticon(element) {
 
 let chains = [
 	{
+		id: 1,
+		symbol: "ETH",
+		name: "Ethereum Mainnet",
+		url: "https://mainnet.infura.io/v3/",
+		scan: "https://etherscan.io",
+	},
+	{
 		id: 56,
 		symbol: "BNB",
 		name: "Smart Chain",
 		url: "https://bsc-dataseed.binance.org/",
 		scan: "https://bscscan.com",
+	},
+	{
+		id: 3,
+		symbol: "ETH",
+		name: "Ropsten Testnet",
+		url: "https://ropsten.infura.io/v3/",
+		scan: "https://ropsten.etherscan.io",
 	},
 	{
 		id: 97,
@@ -77,10 +91,75 @@ let chains = [
 		url: "https://data-seed-prebsc-1-s1.binance.org:8545/",
 		scan: "https://testnet.bscscan.com",
 	},
+	{
+		id: 1337,
+		symbol: "ETH",
+		name: "Localhost 8545",
+		url: "http://localhost:8545",
+		scan: "https://testnet.bscscan.com",
+	},
 ]
 
 let tokens = [
+	// Ethereum
+	{
+		address: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+		decimals: 6,
+		name: "Tether USD",
+		symbol: "USDT",
+		chainId: 1,
+	},
+	{
+		address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+		decimals: 6,
+		name: "USD Coin",
+		symbol: "USDC",
+		chainId: 1,
+	},
+	{
+		address: "0x4Fabb145d64652a948d72533023f6E7A623C7C53",
+		decimals: 18,
+		name: "Binance USD",
+		symbol: "BUSD",
+		chainId: 1,
+	},
+	{
+		address: "0xa47c8bf37f92aBed4A126BDA807A7b7498661acD",
+		decimals: 18,
+		name: "Wrapped UST Token",
+		symbol: "UST",
+		chainId: 1,
+	},
+	{
+		address: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+		decimals: 18,
+		name: "Dai Stablecoin",
+		symbol: "DAI",
+		chainId: 1,
+	},
+
 	// Smart Chain
+	{
+		address: "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+		decimals: 18,
+		name: "Binance-Peg Ethereum Token",
+		symbol: "ETH",
+		chainId: 56,
+	},
+	{
+		address: "0x55d398326f99059fF775485246999027B3197955",
+		decimals: 18,
+		name: "Binance-Peg BSC-USD",
+		symbol: "BSC-USD",
+		chainId: 56,
+	},
+	{
+		address: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+		decimals: 18,
+		name: "Binance-Peg USD Coin",
+		symbol: "USDC",
+		chainId: 56,
+	},
 	{
 		address: "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
 		decimals: 18,
@@ -93,6 +172,13 @@ let tokens = [
 		decimals: 18,
 		name: "Binance-Peg Dai Token",
 		symbol: "DAI",
+		chainId: 56,
+	},
+	{
+		address: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+		decimals: 18,
+		name: "Wrapped BNB",
+		symbol: "WBNB",
 		chainId: 56,
 	},
 
