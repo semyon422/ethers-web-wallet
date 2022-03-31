@@ -54,6 +54,14 @@ function readFileAsync(file) {
 	})
 }
 
+function setIdenticon(element, address) {
+	element.style.backgroundImage = "url(" + blockies.create({seed: address.toLowerCase(), size: 8, scale: 16}).toDataURL() + ")"
+}
+
+function unsetIdenticon(element) {
+	element.style.backgroundImage = null
+}
+
 let chains = [
 	{
 		id: 56,
@@ -148,6 +156,8 @@ function appCreateWallet() {return {
 				size: 512,
 			})
 			createWalletQR.value = JSON.stringify(this.wallet.address)
+			setIdenticon(this.$refs["address-small-icon"], this.wallet.address)
+			setIdenticon(this.$refs["address-icon"], this.wallet.address)
 		} catch (e) {
 			this.creationError = e.reason || e.message
 		}
@@ -288,6 +298,18 @@ function appCreate() {return {
 
 		if (!this.token) this.transferTo = this.tx.to
 
+		if (isAddressValid(this.fromAddress))
+			setIdenticon(this.$refs["from-icon"], this.fromAddress)
+		else unsetIdenticon(this.$refs["from-icon"])
+		
+		if (isAddressValid(this.tx.to))
+			setIdenticon(this.$refs["to-icon-coin"], this.tx.to)
+		else unsetIdenticon(this.$refs["to-icon-coin"])
+		
+		if (isAddressValid(this.transferTo))
+			setIdenticon(this.$refs["to-icon-token"], this.transferTo)
+		else unsetIdenticon(this.$refs["to-icon-token"])
+
 		if (!isAddressValid(this.fromAddress)) {
 			createQR.foregroundAlpha = 0
 			return
@@ -349,7 +371,14 @@ function appSign() {return {
 			let transfer = await erc20interface.decodeFunctionData("transfer", this.tx.data)
 			this.transferTo = transfer.to
 			this.transferAmount = ethers.utils.formatUnits(transfer.amount, this.token.decimals)
-
+			
+			if (isAddressValid(this.tx.to))
+				setIdenticon(this.$refs["to-icon-coin"], this.tx.to)
+			else unsetIdenticon(this.$refs["to-icon-coin"])
+			
+			if (isAddressValid(this.transferTo))
+				setIdenticon(this.$refs["to-icon-token"], this.transferTo)
+			else unsetIdenticon(this.$refs["to-icon-token"])
 		} catch {
 			await this.resetTx()
 		}
@@ -375,6 +404,7 @@ function appSign() {return {
 		this.progress = 0
 		this.decryptionError = ""
 		this.decrypting = false
+		unsetIdenticon(this.$refs["from-icon"])
 	},
 	reset() {
 		this.resetWallet()
@@ -405,6 +435,10 @@ function appSign() {return {
 					obj.progress = p
 				})
 			}
+
+			if (isAddressValid(this.wallet.address))
+				setIdenticon(this.$refs["from-icon"], this.wallet.address)
+			else unsetIdenticon(this.$refs["from-icon"])
 		} catch (e) {
 			this.decryptionError = e.reason || e.message
 		}
@@ -450,6 +484,14 @@ function appSend() {return {
 		} catch (e) {
 			this.messageParse = e.reason || e.message
 			this.tx = {}
+			this.chain = null
+			this.token = null
+			this.gasFeeLimit = ""
+			this.transferTo = ""
+			this.transferAmount = ""
+			unsetIdenticon(this.$refs["from-icon"])
+			unsetIdenticon(this.$refs["to-icon-coin"])
+			unsetIdenticon(this.$refs["to-icon-token"])
 		}
 	},
 	scanSignedTransaction() {
@@ -466,6 +508,14 @@ function appSend() {return {
 	
 		this.gasFeeLimit = ethers.utils.formatEther(ethers.utils.parseUnits(this.tx.gasPrice, "gwei") * this.tx.gasLimit)
 
+		if (isAddressValid(this.tx.from))
+			setIdenticon(this.$refs["from-icon"], this.tx.from)
+		else unsetIdenticon(this.$refs["from-icon"])
+		
+		if (isAddressValid(this.tx.to))
+			setIdenticon(this.$refs["to-icon-coin"], this.tx.to)
+		else unsetIdenticon(this.$refs["to-icon-coin"])
+
 		if (this.tx.data == "0x") return
 
 		this.token = tokens.filter((t) => t.address == this.tx.to && t.chainId == this.tx.chainId)[0]
@@ -473,6 +523,10 @@ function appSend() {return {
 		let transfer = await erc20interface.decodeFunctionData("transfer", this.tx.data)
 		this.transferTo = transfer.to
 		this.transferAmount = ethers.utils.formatUnits(transfer.amount, this.token.decimals)
+		
+		if (isAddressValid(this.transferTo))
+			setIdenticon(this.$refs["to-icon-token"], this.transferTo)
+		else unsetIdenticon(this.$refs["to-icon-token"])
 	},
 	async sendTransaction() {
 		this.complete = false
