@@ -311,8 +311,8 @@ function appCreate() {return {
 	},
 	updateToken() {
 		this.token = tokens.filter((t) => t.address == this.tokenAddress && t.chainId == this.tx.chainId)[0]
+		this.tx.to = this.transferTo
 		if (!this.token) {
-			this.tx.to = this.transferTo
 			this.tx.data = ""
 			this.updateTx()
 			return
