@@ -234,7 +234,7 @@ function appCreateWallet() {return {
 				element: document.getElementById("create-wallet-qr"),
 				size: 512,
 			})
-			createWalletQR.value = JSON.stringify(this.wallet.address)
+			createWalletQR.value = this.wallet.address
 			setIdenticon(this.$refs["address-small-icon"], this.wallet.address)
 			setIdenticon(this.$refs["address-icon"], this.wallet.address)
 		} catch (e) {
