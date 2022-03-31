@@ -431,12 +431,18 @@ function appSign() {return {
 		this.transferAmount = "0"
 		this.gasFeeLimit = ""
 		this.token = null
+		unsetIdenticon(this.$refs["to-icon-coin"])
+		unsetIdenticon(this.$refs["to-icon-token"])
 	},
 	async parse() {
 		try {
 			this.tx = JSON.parse(this.txJson)
 			this.chain = chains.filter((c) => c.id == this.tx.chainId)[0]
 			this.gasFeeLimit = ethers.utils.formatEther(ethers.utils.parseUnits(this.tx.gasPrice, "gwei") * this.tx.gasLimit)
+
+			if (isAddressValid(this.tx.to))
+				setIdenticon(this.$refs["to-icon-coin"], this.tx.to)
+			else unsetIdenticon(this.$refs["to-icon-coin"])
 
 			if (!this.tx.data) {
 				this.transferTo = ""
@@ -450,10 +456,6 @@ function appSign() {return {
 			let transfer = await erc20interface.decodeFunctionData("transfer", this.tx.data)
 			this.transferTo = transfer.to
 			this.transferAmount = ethers.utils.formatUnits(transfer.amount, this.token.decimals)
-			
-			if (isAddressValid(this.tx.to))
-				setIdenticon(this.$refs["to-icon-coin"], this.tx.to)
-			else unsetIdenticon(this.$refs["to-icon-coin"])
 			
 			if (isAddressValid(this.transferTo))
 				setIdenticon(this.$refs["to-icon-token"], this.transferTo)
