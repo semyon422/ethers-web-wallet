@@ -267,6 +267,11 @@ let provider
 let contract
 function appCreate() {return {
 	fromAddress: "",
+	isGettingBalance: false,
+	isGettingTokenBalance: false,
+	isGettingNonce: false,
+	isGettingGasLimit: false,
+	isGettingGasPrice: false,
 	balance: 0,
 	gasFeeLimit: 0,
 	chain: chains[0],
@@ -319,26 +324,35 @@ function appCreate() {return {
 		this.updateTx()
 	},
 	async getBalance() {
+		this.isGettingBalance = true
 		if (!isAddressValid(this.fromAddress)) return
 		let balance = await provider.getBalance(this.fromAddress)
 		this.balance = ethers.utils.formatEther(balance)
+		this.isGettingBalance = false
 	},
 	async getTokenBalance() {
+		this.isGettingTokenBalance = true
 		if (!isAddressValid(this.fromAddress)) return
 		let balance = await contract.balanceOf(this.fromAddress)
 		this.token.balance = ethers.utils.formatUnits(balance, this.token.decimals)
+		this.isGettingTokenBalance = false
 	},
 	async getNonce() {
+		this.isGettingNonce = true
 		if (!isAddressValid(this.fromAddress)) return
 		this.tx.nonce = await provider.getTransactionCount(this.fromAddress)
 		await this.updateTx()
+		this.isGettingNonce = false
 	},
 	async getGasPrice() {
+		this.isGettingGasPrice = true
 		let gasPrice = await provider.getGasPrice()
 		this.tx.gasPrice = ethers.utils.formatUnits(gasPrice, "gwei")
 		await this.updateTx()
+		this.isGettingGasPrice = false
 	},
 	async estimateGas() {
+		this.isGettingGasLimit = true
 		let gasLimit
 		let amount = this.transferAmount
 		if (!amount) amount = "0"
@@ -346,6 +360,7 @@ function appCreate() {return {
 		else gasLimit = await contract.estimateGas.transfer(this.fromAddress, ethers.utils.parseUnits(amount, this.token.decimals))
 		this.tx.gasLimit = ethers.BigNumber.from(gasLimit).toString()
 		await this.updateTx()
+		this.isGettingGasLimit = false
 	},
 	async getTx() {
 		if (this.token) {
@@ -424,7 +439,7 @@ function appSign() {return {
 	chain: null,
 	locked: false,
 	gasFeeLimit: "",
-	async resetTx() {
+	resetTx() {
 		this.tx = {}
 		this.chain = {}
 		this.transferTo = ""
@@ -435,33 +450,33 @@ function appSign() {return {
 		unsetIdenticon(this.$refs["to-icon-token"])
 	},
 	async parse() {
+		this.resetTx()
 		try {
 			this.tx = JSON.parse(this.txJson)
+
+			parseTransaction(this.tx)
+
+			if (!isAddressValid(this.tx.to)) return this.resetTx()
+			setIdenticon(this.$refs["to-icon-coin"], this.tx.to)
+
 			this.chain = chains.filter((c) => c.id == this.tx.chainId)[0]
+			if (!this.chain) return this.resetTx()
+
 			this.gasFeeLimit = ethers.utils.formatEther(ethers.utils.parseUnits(this.tx.gasPrice, "gwei") * this.tx.gasLimit)
 
-			if (isAddressValid(this.tx.to))
-				setIdenticon(this.$refs["to-icon-coin"], this.tx.to)
-			else unsetIdenticon(this.$refs["to-icon-coin"])
-
-			if (!this.tx.data) {
-				this.transferTo = ""
-				this.transferAmount = "0"
-				this.token = null
-				return
-			}
+			if (!this.tx.data) return
 
 			this.token = tokens.filter((t) => t.address == this.tx.to && t.chainId == this.tx.chainId)[0]
+			if (!this.token) return this.resetTx()
 
 			let transfer = await erc20interface.decodeFunctionData("transfer", this.tx.data)
 			this.transferTo = transfer.to
 			this.transferAmount = ethers.utils.formatUnits(transfer.amount, this.token.decimals)
-			
-			if (isAddressValid(this.transferTo))
-				setIdenticon(this.$refs["to-icon-token"], this.transferTo)
-			else unsetIdenticon(this.$refs["to-icon-token"])
+
+			if (!isAddressValid(this.transferTo)) return this.resetTx()
+			setIdenticon(this.$refs["to-icon-token"], this.transferTo)
 		} catch {
-			await this.resetTx()
+			this.resetTx()
 		}
 	},
 	scanTransactionJson() {
@@ -517,10 +532,9 @@ function appSign() {return {
 				})
 			}
 
-			if (isAddressValid(this.wallet.address))
-				setIdenticon(this.$refs["from-icon"], this.wallet.address)
-			else unsetIdenticon(this.$refs["from-icon"])
+			setIdenticon(this.$refs["from-icon"], this.wallet.address)
 		} catch (e) {
+			unsetIdenticon(this.$refs["from-icon"])
 			this.decryptionError = e.reason || e.message
 		}
 		this.decrypting = false
@@ -617,7 +631,6 @@ function appSend() {return {
 		try {
 			let tx = await provider.sendTransaction(this.signedTxRaw, 0)
 			this.txReceipt = await tx.wait()
-			// this.txReceipt = await provider.waitForTransaction(tx.hash)
 			this.status = this.txReceipt.status == 1 ? 'success' : 'failure'
 		} catch (e) {
 			this.status = "waiting to be sent"

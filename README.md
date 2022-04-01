@@ -45,6 +45,7 @@ First, a transaction is created on a device connected to the Internet. Then it s
 - v1.0.2 - Add ERC20 tokens support
 - v1.0.3 - Add wallet creation page
 - v1.0.4 - Add identicons, more networks and tokens
+- v1.0.5 - UI/UX and security improvements
 
 **Used Libraries:**
 

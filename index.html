@@ -63,6 +63,19 @@
 						<a class="navbar-item" @click="page = _page; open = false;" x-text="_page"></a>
 					</template>
 				</div>
+
+				<div class="navbar-end">
+					<div class="navbar-item">
+						<div class="buttons">
+							<a href="https://bscscan.com/address/0xC9Ad4f1843100a6E4DA38C8f4DA2aee84a8875eC" class="button is-primary">
+								<strong>Donate</strong>
+							</a>
+							<a href="https://github.com/semyon422/ethers-web-wallet/releases" class="button is-light">
+								Download
+							</a>
+						</div>
+					</div>
+				</div>
 			</div>
 		</nav>
 	</div>
@@ -217,7 +230,11 @@
 								<a class="button is-static" x-text="chain.symbol"></a>
 							</p>
 							<p class="control">
-								<a class="button is-info" :class="isAddressValid(fromAddress) ? '' : 'is-static'" @click="getBalance">
+								<a
+									class="button is-info"
+									:class="(isAddressValid(fromAddress) ? '' : 'is-static ') + (isGettingBalance ? 'is-loading' : '')"
+									@click="getBalance"
+								>
 									Get
 								</a>
 							</p>
@@ -260,7 +277,11 @@
 								<a class="button is-static" x-text="token && token.symbol"></a>
 							</p>
 							<p class="control">
-								<a class="button is-info" :class="isAddressValid(fromAddress) ? '' : 'is-static'" @click="getTokenBalance">
+								<a
+									class="button is-info"
+									:class="(isAddressValid(fromAddress) ? '' : 'is-static ') + (isGettingTokenBalance ? 'is-loading' : '')"
+									@click="getTokenBalance"
+								>
 									Get
 								</a>
 							</p>
@@ -327,20 +348,29 @@
 								<input class="input" type="number" x-model="tx.nonce" @input="updateTx">
 							</div>
 							<p class="control">
-								<a class="button is-info" :class="isAddressValid(fromAddress) ? '' : 'is-static'" @click="getNonce">
+								<a
+									class="button is-info"
+									:class="(isAddressValid(fromAddress) ? '' : 'is-static ') + (isGettingNonce ? 'is-loading' : '')"
+									@click="getNonce"
+								>
 									Get
 								</a>
 							</p>
 						</div>
 					</div>
 					<div class="field">
-						<label class="label">Gas limit (tx.gasLimit)</label>
-							<div class="field has-addons">
+						<label class="label" x-show="!token">Gas limit (tx.gasLimit)</label>
+						<label class="label" x-show="token">Gas limit (tx.gasLimit), add <a href="https://ethereum.stackexchange.com/questions/71235/gas-limit-for-erc-20-tokens">10-20%</a></label>
+						<div class="field has-addons">
 							<div class="control is-expanded">
 								<input class="input" type="number" x-model="tx.gasLimit" @input="updateTx">
 							</div>
 							<p class="control">
-								<a class="button is-info" :class="isAddressValid(tx.to) ? '' : 'is-static'" @click="estimateGas">
+								<a
+									class="button is-info"
+									:class="(isAddressValid(tx.to) ? '' : 'is-static ') + (isGettingGasLimit ? 'is-loading' : '')"
+									@click="estimateGas"
+								>
 									Get
 								</a>
 							</p>
@@ -348,7 +378,7 @@
 					</div>
 					<div class="field">
 						<label class="label">Gas price (tx.gasPrice)</label>
-							<div class="field has-addons">
+						<div class="field has-addons">
 							<div class="control is-expanded">
 								<input class="input" type="number" x-model="tx.gasPrice" @input="updateTx">
 							</div>
@@ -356,7 +386,11 @@
 								<a class="button is-static">Gwei</a>
 							</p>
 							<p class="control">
-								<a class="button is-info" @click="getGasPrice">
+								<a
+									class="button is-info"
+									:class="isGettingGasPrice ? 'is-loading' : ''"
+									@click="getGasPrice"
+								>
 									Get
 								</a>
 							</p>
@@ -364,7 +398,7 @@
 					</div>
 					<div class="field">
 						<label class="label">Fee limit (gasPrice * gasLimit)</label>
-							<div class="field has-addons">
+						<div class="field has-addons">
 							<div class="control is-expanded">
 								<input class="input" type="number" :value="gasFeeLimit">
 							</div>
@@ -827,8 +861,8 @@
 	<footer class="footer">
 		<div class="content has-text-centered">
 			<p>
-				<strong>ethers web wallet</strong> v1.0.4a by <a href="https://github.com/semyon422">semyon422</a>.
-				The source code is licensed <a href="http://opensource.org/licenses/mit-license.php">MIT</a>.
+				<strong>ethers web wallet</strong> v1.0.5 by <a href="https://github.com/semyon422">semyon422</a>.
+				The <a href="https://github.com/semyon422/ethers-web-wallet">source code</a> is licensed <a href="http://opensource.org/licenses/mit-license.php">MIT</a>.
 			</p>
 		</div>
 	</footer>
