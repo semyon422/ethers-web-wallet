@@ -7,7 +7,7 @@ function JSONstringifyOrder(obj, space) {
 			seen[key] = null
 		}
 		return value
-	});
+	})
 	allKeys.sort()
 	return JSON.stringify(obj, allKeys, space)
 }
@@ -368,10 +368,10 @@ function appCreate() {return {
 			if (!amount) amount = "0"
 
 			let tx = await contract.populateTransaction.transfer(
-				this.fromAddress, ethers.utils.parseUnits(amount, this.token.decimals)
+				this.transferTo, ethers.utils.parseUnits(amount, this.token.decimals)
 			)
 			this.tx.data = tx.data
-			this.tx.to = tx.to
+			this.tx.to = this.token.address
 			this.tx.value = "0"
 		}
 		return {
